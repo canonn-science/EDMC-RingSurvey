@@ -23,7 +23,7 @@ The data will be stored in a google sheet. The following attributes will be reco
 | Mass | Mass in megatons |
 | Inner Radius | Measured in KM |
 | Outer Radius | Measured in KM |
-| Area | The area of the ring in km$^{2}$ |
+| Area | The area of the ring in km<sup>2</sup> |
 | Density | Mass / Area MT/km<sup>2</sup> |
 | Width | The width between inner and outer radius in Km |
 
