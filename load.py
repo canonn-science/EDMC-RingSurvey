@@ -125,6 +125,33 @@ class Body:
             self.rings[ring]["Visible"] = True
 
 
+class cycle():
+
+    def __init__(self, list):
+        self.values = list
+        self.index = 0
+    @property
+    def len(self):
+        return len(self.values)
+    @property
+    def current(self):
+        return self.values[self.index]
+
+    def next(self):
+        self.index += 1
+        self.index = self.index % len(self.values)
+        return self.values[self.index]
+
+    def prev(self):
+        self.index -= 1
+        self.index = self.index % len(self.values)
+        return self.values[self.index]
+    
+    def append(self,value):
+        self.values.append(value)
+        #set the index to the most recent value
+        self.index=len(self.values)-1
+
 class postJson(threading.Thread):
     def __init__(self, url, payload):
         threading.Thread.__init__(self)
@@ -166,7 +193,9 @@ def plugin_start(plugin_dir):
     Load this plugin into EDMC
     """
     this.plugin_dir = plugin_dir
-    logger.info("I am loaded! My plugin folder is {}".format(plugin_dir))
+    this.IMG_PREV = tk.PhotoImage(file=os.path.join(plugin_dir, "icons", "left_arrow.gif"))
+    this.IMG_NEXT = tk.PhotoImage(file=os.path.join(plugin_dir, "icons", "right_arrow.gif"))
+
     return "RingSurvey"
 
 
@@ -180,34 +209,56 @@ def destroy_titles(event=None):
 
 def toggle_visible(index):
     logger.debug(f"toggling visible {index}")
-    this.bodies[this.body_index].toggle_ring(index)
+    this.bodies.current.toggle_ring(index)
     if this.tkrings_vis[index]["text"] == "Visible":
         this.tkrings_vis[index]["text"]="Hidden"
         this.tkrings_vis[index].config(foreground="grey")
     else:
         this.tkrings_vis[index]["text"]="Visible"
         this.tkrings_vis[index].config(foreground="green")
-    print(this.bodies[this.body_index])
+    
 
 def submit_event(event):
-    this.bodies[this.body_index].submitted=True
+    this.bodies.current.submitted=True
     this.submit.grid_remove()
+
+def next():
+    this.bodies.next()
+    destroy()
+    create()
+
+def prev():
+    this.bodies.next()
+    destroy()
+    create()
+
 
 def create():
     destroy_titles()
     this.parent.grid()
     this.frame.columnconfigure(2, weight=1)
-    this.frame.grid()
+    this.frame.grid(sticky="EW")
 
-    this.body = tk.Label(this.frame)
-    this.body.grid(row=0, column=0, columnspan=2, sticky="W")
-    bodyname = this.bodies[this.body_index].Name
+    this.navigation=tk.Frame(this.frame)
+    this.navigation.grid(row=0, column=0, columnspan=2, sticky="W")
+    this.navigation.columnconfigure(3, weight=1)
+
+    this.body = tk.Label(this.navigation)
+    this.body.grid(row=0, column=1, columnspan=2)
+    bodyname = this.bodies.current.Name
     this.body["text"] = bodyname
+
+    this.prev = tk.Button(this.navigation, text="Prev", image=this.IMG_PREV, width=14, height=14, borderwidth=0)
+    this.next = tk.Button(this.navigation, text="Next", image=this.IMG_NEXT, width=14, height=14, borderwidth=0)
+    this.prev.grid(row=0, column=0, sticky="W")
+    this.next.grid(row=0, column=2, sticky="E")
+    this.prev.bind('<Button-1>', prev)
+    this.next.bind('<Button-1>', next)
 
     this.tkrings = []
     this.tkrings_vis = []
 
-    for index, ring in enumerate(this.bodies[this.body_index].Rings):
+    for index, ring in enumerate(this.bodies.current.Rings):
         logger.debug(f"setting index = {index} {ring}")
         this.tkrings.append(tk.Label(this.frame))
         this.tkrings_vis.append(tk.Label(this.frame))
@@ -222,7 +273,6 @@ def create():
             this.tkrings_vis[index]["text"] = "Hidden"
             this.tkrings_vis[index].config(foreground="grey")
 
-    this.submit=tk.Button()
 
     # this.ruin.bind('<Button-1>', ruin_next)
     # this.ruin.bind('<Button-3>', ruin_prev)
@@ -235,19 +285,28 @@ def create():
 
     this.submit = tk.Button(this.frame, text="Submit", foreground="green")
     this.submit.bind('<Button-1>', submit_event)
-    this.submit.grid(row=4,column=0)
+    this.submit.grid(row=4,column=0, columnspan=2, sticky="WE")
 
     # this.dismiss = tk.Button(this.frame, text="Dismiss", foreground="red")
     # this.dismiss.bind('<Button-1>', destroy)
     # this.dismiss.grid(row=3,column=1)
 
     theme.update(this.frame)
+    theme.update(this.navigation)
     # this.parent.grid()
 
 
 def destroy(event=None):
     logger.info("destroy")
-
+    this.parent.grid_remove()
+    this.frame.grid_remove()
+    this.submit.destroy()
+    for index, ring in enumerate(this.tkrings):
+        this.tkrings[index].destroy()
+        this.tkrings_vis[index].destroy()
+    this.prev.destroy()
+    this.nextbody.destroy()
+    this.navigation.destroy()
 
 def plugin_app(parent):
     """
@@ -268,15 +327,17 @@ def plugin_app(parent):
     this.parent.after(30000, destroy_titles)
 
     this.startup = True
+    this.bodies=cycle([])
+    
 
     return this.frame
 
 
 def init_test():
-    this.bodies = {}
-    this.body_index = "2"
+    this.bodies =cycle([])
+    
 
-    this.bodies["1"] = Body(
+    this.bodies.append(Body(
         {
             "timestamp": "2023-05-19T18:37:50Z",
             "event": "Scan",
@@ -295,8 +356,8 @@ def init_test():
                 }
             ],
         }
-    )
-    this.bodies["2"] = Body(
+    ))
+    this.bodies.append(Body(
         {
             "timestamp": "2023-05-19T18:37:50Z",
             "event": "Scan",
@@ -329,7 +390,7 @@ def init_test():
                 },
             ],
         }
-    )
+    ))
 
 
 def journal_entry(cmdr, is_beta, system, station, entry, state):
@@ -350,6 +411,5 @@ def journal_entry(cmdr, is_beta, system, station, entry, state):
 
     if detected:
         this.system = entry.get("StarSystem")
-        this.bodies[entry.get("BodyId")] = Body(entry)
-        this.bodyindex = entry.get("BodyId")
+        this.bodies.append(Body(entry))
         create()
