@@ -102,6 +102,7 @@ class Body():
             ringdata["Visible"]=True
         else:
             ringdata["Visible"]=False
+        logger.debug(ringdata)
         return ringdata
     
     def toggle_ring(self,ring):
