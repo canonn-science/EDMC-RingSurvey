@@ -117,6 +117,8 @@ class Body:
         return ringdata
 
     def toggle_ring(self, ring):
+        logger.debug(f"toggling visible {ring}")
+
         if self.rings[ring]["Visible"]:
             self.rings[ring]["Visible"] = False
         else:
@@ -176,6 +178,20 @@ def destroy_titles(event=None):
         this.parent.grid_remove()
     this.startup = False
 
+def toggle_visible(index):
+    logger.debug(f"toggling visible {index}")
+    this.bodies[this.body_index].toggle_ring(index)
+    if this.tkrings_vis[index]["text"] == "Visible":
+        this.tkrings_vis[index]["text"]="Hidden"
+        this.tkrings_vis[index].config(foreground="grey")
+    else:
+        this.tkrings_vis[index]["text"]="Visible"
+        this.tkrings_vis[index].config(foreground="green")
+    print(this.bodies[this.body_index])
+
+def submit_event(event):
+    this.bodies[this.body_index].submitted=True
+    this.submit.grid_remove()
 
 def create():
     destroy_titles()
@@ -198,10 +214,15 @@ def create():
         this.tkrings[index]["text"] = ring.get("Name").replace(f"{bodyname} ", "")
         this.tkrings[index].grid(row=index + 1, column=0, sticky="W")
         this.tkrings_vis[index].grid(row=index + 1, column=1, sticky="W")
+        this.tkrings_vis[index].bind("<Button-1>", lambda event, idx=index: toggle_visible(idx))
         if ring.get("Visible"):
             this.tkrings_vis[index]["text"] = "Visible"
+            this.tkrings_vis[index].config(foreground="green")
         else:
             this.tkrings_vis[index]["text"] = "Hidden"
+            this.tkrings_vis[index].config(foreground="grey")
+
+    this.submit=tk.Button()
 
     # this.ruin.bind('<Button-1>', ruin_next)
     # this.ruin.bind('<Button-3>', ruin_prev)
@@ -212,9 +233,9 @@ def create():
     # this.desc=tk.Label(this.frame,text=this.types.current().title())
     # this.desc.grid(row=1,column=1)
 
-    # this.submit = tk.Button(this.frame, text="Submit", foreground="green")
-    # this.submit.bind('<Button-1>', submit_event)
-    # this.submit.grid(row=2,column=1)
+    this.submit = tk.Button(this.frame, text="Submit", foreground="green")
+    this.submit.bind('<Button-1>', submit_event)
+    this.submit.grid(row=4,column=0)
 
     # this.dismiss = tk.Button(this.frame, text="Dismiss", foreground="red")
     # this.dismiss.bind('<Button-1>', destroy)
