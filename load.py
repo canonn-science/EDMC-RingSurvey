@@ -55,7 +55,7 @@ plugin_name = os.path.basename(os.path.dirname(__file__))
 # folder name in the logging output format.
 # NB: plugin_name here *must* be the plugin's folder name as per the preceding
 #     code, else the logger won't be properly set up.
-logger = logging.getLogger(f'{appname}.{plugin_name}')
+logger = logging.getLogger(f"{appname}.{plugin_name}")
 
 # If the Logger has handlers then it was already set up by the core code, else
 # it needs setting up here.
@@ -65,52 +65,62 @@ if not logger.hasHandlers():
     logger.setLevel(level)
     logger_channel = logging.StreamHandler()
     logger_formatter = logging.Formatter(
-        f'%(asctime)s - %(name)s - %(levelname)s - %(module)s:%(lineno)d:%(funcName)s: %(message)s')
-    logger_formatter.default_time_format = '%Y-%m-%d %H:%M:%S'
-    logger_formatter.default_msec_format = '%s.%03d'
+        f"%(asctime)s - %(name)s - %(levelname)s - %(module)s:%(lineno)d:%(funcName)s: %(message)s"
+    )
+    logger_formatter.default_time_format = "%Y-%m-%d %H:%M:%S"
+    logger_formatter.default_msec_format = "%s.%03d"
     logger_channel.setFormatter(logger_formatter)
     logger.addHandler(logger_channel)
 
-class Body():   
 
+class Body:
     def __init__(self, event):
-        self.event=event
-        self.name=event.get("Name")
-        self.system=event.get("SystemName")
-        self.bodyid=event.get("BodyId")
-        self.rings=[]
+        self.event = event
+        self.name = event.get("BodyName")
+        self.system = event.get("SystemName")
+        self.bodyid = event.get("BodyId")
+        self.rings = []
         for r in event.get("Rings"):
             self.rings.append(self.init_rings(r))
-        self.submitted=False
+        self.submitted = False
+
+    def __repr__(self):
+        properties = vars(self)
+        return str(properties)
 
     @property
     def Name(self):
-        return self.name      
+        return self.name
 
-    def init_rings(self,ring):
-        ringdata={ 
-            "Name": ring.get("Name"), 
-            "RingClass":ring.get("RingClass"), 
-            "MassMT": float(ring.get("MassMT")), 
+    @property
+    def Rings(self):
+        return self.rings
+
+    def init_rings(self, ring):
+        ringdata = {
+            "Name": ring.get("Name"),
+            "RingClass": ring.get("RingClass"),
+            "MassMT": float(ring.get("MassMT")),
             # we want to work in KM
-            "InnerRad": float(ring.get("InnerRad"))/1000, 
-            "OuterRad": float(ring.get("OuterRad"))/1000,
+            "InnerRad": float(ring.get("InnerRad")) / 1000,
+            "OuterRad": float(ring.get("OuterRad")) / 1000,
         }
-        ringdata["Area"]=(math.pi*pow(ringdata["OuterRad"],2))-(math.pi*pow(ringdata["InnerRad"],2))
-        ringdata["Density"]=ringdata["Area"]/ringdata["MassMT"]
+        ringdata["Area"] = (math.pi * pow(ringdata["OuterRad"], 2)) - (
+            math.pi * pow(ringdata["InnerRad"], 2)
+        )
+        ringdata["Density"] = ringdata["Area"] / ringdata["MassMT"]
         if ringdata["Density"] > 0.001:
-            ringdata["Visible"]=True
+            ringdata["Visible"] = True
         else:
-            ringdata["Visible"]=False
-        logger.debug(ringdata)
+            ringdata["Visible"] = False
+
         return ringdata
-    
-    def toggle_ring(self,ring):
+
+    def toggle_ring(self, ring):
         if self.rings[ring]["Visible"]:
-            self.rings[ring]["Visible"]=False
+            self.rings[ring]["Visible"] = False
         else:
-            self.rings[ring]["Visible"]=True
-    
+            self.rings[ring]["Visible"] = True
 
 
 class postJson(threading.Thread):
@@ -122,13 +132,16 @@ class postJson(threading.Thread):
     def run(self):
         logger.debug("emitter.post")
 
-        r = requests.post(self.url, data=json.dumps(self.payload, ensure_ascii=False).encode('utf8'),
-                          headers={"content-type": "application/json"})
+        r = requests.post(
+            self.url,
+            data=json.dumps(self.payload, ensure_ascii=False).encode("utf8"),
+            headers={"content-type": "application/json"},
+        )
         if not r.status_code == requests.codes.ok:
             logger.error(json.dumps(self.payload))
             headers = r.headers
-            contentType = str(headers['content-type'])
-            if 'json' in contentType:
+            contentType = str(headers["content-type"])
+            if "json" in contentType:
                 logger.error(json.dumps(r.content))
             else:
                 logger.error(r.content)
@@ -154,125 +167,168 @@ def plugin_start(plugin_dir):
     logger.info("I am loaded! My plugin folder is {}".format(plugin_dir))
     return "RingSurvey"
 
+
 def destroy_titles(event=None):
-    if this.startup:    
+    if this.startup:
         logger.info("destroying titles")
         this.title.destroy()
         this.status.destroy()
         this.parent.grid_remove()
-    this.startup=False
+    this.startup = False
+
 
 def create():
-    
     destroy_titles()
     this.parent.grid()
+    this.frame.columnconfigure(2, weight=1)
     this.frame.grid()
-    
-    this.body=tk.Label(this.frame)
-    this.body.grid(row=0, column=0, rowspan=3)
-    this.body["text"]=this.bodies[this.body_index].Name
-    #this.ruin.bind('<Button-1>', ruin_next)
-    #this.ruin.bind('<Button-3>', ruin_prev)
-    #this.ruin_image = tk.PhotoImage(
+
+    this.body = tk.Label(this.frame)
+    this.body.grid(row=0, column=0, columnspan=2, sticky="W")
+    bodyname = this.bodies[this.body_index].Name
+    this.body["text"] = bodyname
+
+    this.tkrings = []
+    this.tkrings_vis = []
+
+    for index, ring in enumerate(this.bodies[this.body_index].Rings):
+        logger.debug(f"setting index = {index} {ring}")
+        this.tkrings.append(tk.Label(this.frame))
+        this.tkrings_vis.append(tk.Label(this.frame))
+        this.tkrings[index]["text"] = ring.get("Name").replace(f"{bodyname} ", "")
+        this.tkrings[index].grid(row=index + 1, column=0, sticky="W")
+        this.tkrings_vis[index].grid(row=index + 1, column=1, sticky="W")
+        if ring.get("Visible"):
+            this.tkrings_vis[index]["text"] = "Visible"
+        else:
+            this.tkrings_vis[index]["text"] = "Hidden"
+
+    # this.ruin.bind('<Button-1>', ruin_next)
+    # this.ruin.bind('<Button-3>', ruin_prev)
+    # this.ruin_image = tk.PhotoImage(
     #    file=os.path.join(this.plugin_dir, "images", f"{this.types.current()}.png"))
-    #this.ruin["image"]=this.ruin_image
+    # this.ruin["image"]=this.ruin_image
 
-    #this.desc=tk.Label(this.frame,text=this.types.current().title())
-    #this.desc.grid(row=1,column=1)
+    # this.desc=tk.Label(this.frame,text=this.types.current().title())
+    # this.desc.grid(row=1,column=1)
 
-    #this.submit = tk.Button(this.frame, text="Submit", foreground="green")
-    #this.submit.bind('<Button-1>', submit_event)
-    #this.submit.grid(row=2,column=1)
+    # this.submit = tk.Button(this.frame, text="Submit", foreground="green")
+    # this.submit.bind('<Button-1>', submit_event)
+    # this.submit.grid(row=2,column=1)
 
-    #this.dismiss = tk.Button(this.frame, text="Dismiss", foreground="red")
-    #this.dismiss.bind('<Button-1>', destroy)
-    #this.dismiss.grid(row=3,column=1)
+    # this.dismiss = tk.Button(this.frame, text="Dismiss", foreground="red")
+    # this.dismiss.bind('<Button-1>', destroy)
+    # this.dismiss.grid(row=3,column=1)
 
     theme.update(this.frame)
-    #this.parent.grid()
+    # this.parent.grid()
 
 
 def destroy(event=None):
     logger.info("destroy")
 
 
-
-
 def plugin_app(parent):
     """
     Create a pair of TK widgets for the EDMC main window
     """
-    this.parent=parent
-    #this.container=tk.Frame(parent)
-    #this.container.columnconfigure(1, weight=1)
+    this.parent = parent
+    # this.container=tk.Frame(parent)
+    # this.container.columnconfigure(1, weight=1)
     this.frame = tk.Frame(parent)
     this.frame.columnconfigure(2, weight=1)
-    #this.frame.grid(row=0,column=0)
+    # this.frame.grid(row=0,column=0)
     # By default widgets inherit the current theme's colors
     this.title = tk.Label(this.frame, text="Ring Survey:")
-    this.status = tk.Label(
-        this.frame,
-        text="Started",
-        foreground="green"
-    )
-    #this.container.grid(row=0,column=0)
+    this.status = tk.Label(this.frame, text="Started", foreground="green")
+    # this.container.grid(row=0,column=0)
     this.title.grid(row=0, column=0, sticky="NSEW")
     this.status.grid(row=0, column=1, sticky="NSEW")
-    this.parent.after(30000,destroy_titles)
-    
+    this.parent.after(30000, destroy_titles)
 
-    this.startup=True
+    this.startup = True
 
     return this.frame
 
+
 def init_test():
-    this.bodies={}
-    this.body_index="1"
-    
-    this.bodies["1"]=Body({ "timestamp":"2023-05-19T18:37:50Z", 
-      "event":"Scan", 
-      "ScanType":"AutoScan", 
-      "BodyName":f"{this.system} A", 
-      "BodyID":1, 
-      "StarSystem":this.system, 
-      "SystemAddress":216618994011, 
-      "Rings":[ 
-          { "Name":f"{this.system} A A Belt", "RingClass":"eRingClass_Metalic", "MassMT":3.7679e+10, "InnerRad":1.3762e+09, "OuterRad":2.8425e+09 } 
-      ]
-    })
-    this.bodies["2"]=Body({ "timestamp":"2023-05-19T18:37:50Z", 
-      "event":"Scan", 
-      "ScanType":"AutoScan", 
-      "BodyName":f"{this.system} 1", 
-      "BodyID":2, 
-      "StarSystem":this.system, 
-      "SystemAddress":216618994011, 
-      "Rings":[ 
-          { "Name":f"{this.system} 1 A Ring", "RingClass":"eRingClass_Metalic", "MassMT":3.7679e+10, "InnerRad":1.3762e+09, "OuterRad":2.8425e+09 } ,
-          { "Name":f"{this.system} 1 B Ring", "RingClass":"eRingClass_Metalic", "MassMT":3.7679e+10, "InnerRad":1.3762e+09, "OuterRad":2.8425e+09 } ,
-          { "Name":f"{this.system} 1 C Ring", "RingClass":"eRingClass_Metalic", "MassMT":3.7679e+10, "InnerRad":1.3762e+09, "OuterRad":2.8425e+09 } 
-      ]
-    })
+    this.bodies = {}
+    this.body_index = "2"
 
-
+    this.bodies["1"] = Body(
+        {
+            "timestamp": "2023-05-19T18:37:50Z",
+            "event": "Scan",
+            "ScanType": "AutoScan",
+            "BodyName": f"{this.system} A",
+            "BodyID": 1,
+            "StarSystem": this.system,
+            "SystemAddress": 216618994011,
+            "Rings": [
+                {
+                    "Name": f"{this.system} A A Belt",
+                    "RingClass": "eRingClass_Metalic",
+                    "MassMT": 3.7679e10,
+                    "InnerRad": 1.3762e09,
+                    "OuterRad": 2.8425e09,
+                }
+            ],
+        }
+    )
+    this.bodies["2"] = Body(
+        {
+            "timestamp": "2023-05-19T18:37:50Z",
+            "event": "Scan",
+            "ScanType": "AutoScan",
+            "BodyName": f"{this.system} 1",
+            "BodyID": 2,
+            "StarSystem": this.system,
+            "SystemAddress": 216618994011,
+            "Rings": [
+                {
+                    "Name": f"{this.system} 1 A Ring",
+                    "RingClass": "eRingClass_Metalic",
+                    "MassMT": 3.7679e10,
+                    "InnerRad": 1.3762e09,
+                    "OuterRad": 2.8425e09,
+                },
+                {
+                    "Name": f"{this.system} 1 B Ring",
+                    "RingClass": "eRingClass_Metalic",
+                    "MassMT": 3.7679e20,
+                    "InnerRad": 1.3762e09,
+                    "OuterRad": 2.8425e09,
+                },
+                {
+                    "Name": f"{this.system} 1 C Ring",
+                    "RingClass": "eRingClass_Metalic",
+                    "MassMT": 3.7679e10,
+                    "InnerRad": 1.3762e09,
+                    "OuterRad": 2.8425e09,
+                },
+            ],
+        }
+    )
 
 
 def journal_entry(cmdr, is_beta, system, station, entry, state):
-    rtest = (entry.get("event") == "SendText" and entry.get(
-        "Message") and "test ring survey" in entry.get("Message"))
+    rtest = (
+        entry.get("event") == "SendText"
+        and entry.get("Message")
+        and "test ring survey" in entry.get("Message")
+    )
 
-    hasrings=entry.get("Rings")
-    detected=(hasrings and entry.get("event") in ("Scan"))
-    
+    hasrings = entry.get("Rings")
+    detected = hasrings and entry.get("event") in ("Scan")
+
     if rtest:
-        this.system=system
-        this.testing=True
+        this.system = system
+        this.testing = True
         init_test()
         create()
-        
+
     if detected:
-        this.system=entry.get("StarSystem")
-        this.bodies[entry.get("BodyId")]=Body(entry)
-        this.bodyindex=entry.get("BodyId")
+        this.system = entry.get("StarSystem")
+        this.bodies[entry.get("BodyId")] = Body(entry)
+        this.bodyindex = entry.get("BodyId")
         create()
-        
