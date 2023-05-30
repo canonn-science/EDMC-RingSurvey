@@ -133,6 +133,7 @@ class cycle():
     @property
     def len(self):
         return len(self.values)
+    
     @property
     def current(self):
         return self.values[self.index]
@@ -222,50 +223,78 @@ def submit_event(event):
     this.bodies.current.submitted=True
     this.submit.grid_remove()
 
-def next():
+def next_body(event):
     this.bodies.next()
-    destroy()
     create()
 
-def prev():
+def prev_body(event):
     this.bodies.next()
-    destroy()
     create()
 
 
 def create():
     destroy_titles()
-    this.parent.grid()
-    this.frame.columnconfigure(2, weight=1)
     this.frame.grid(sticky="EW")
+    this.parent.grid()
 
-    this.navigation=tk.Frame(this.frame)
-    this.navigation.grid(row=0, column=0, columnspan=2, sticky="W")
-    this.navigation.columnconfigure(3, weight=1)
+    if not this.created:
+        this.created = True
+        this.parent.grid()
+        this.frame.columnconfigure(2, weight=1)
+        this.frame.grid(sticky="EW")
 
-    this.body = tk.Label(this.navigation)
-    this.body.grid(row=0, column=1, columnspan=2)
+        this.navigation=tk.Frame(this.frame)
+        this.navigation.grid(row=0, column=0, columnspan=2, sticky="W")
+        this.navigation.columnconfigure(3, weight=1)
+
+        this.body = tk.Label(this.navigation)
+        this.body.grid(row=0, column=1, columnspan=2)
+        
+        
+        this.prev = tk.Button(this.navigation, text="Prev", image=this.IMG_PREV, width=14, height=14, borderwidth=0)
+        this.next = tk.Button(this.navigation, text="Next", image=this.IMG_NEXT, width=14, height=14, borderwidth=0)
+        this.prev.grid(row=0, column=0, sticky="W")
+        this.next.grid(row=0, column=2, sticky="E")
+        this.prev.bind('<Button-1>', prev_body)
+        this.next.bind('<Button-1>',  next_body  )
+
+        this.tkrings = []
+        this.tkrings_vis = []
+
+        for index in range(3):
+            this.tkrings.append(tk.Label(this.frame))
+            this.tkrings_vis.append(tk.Label(this.frame))
+            this.tkrings[index].grid(row=index + 1, column=0, sticky="W")
+            this.tkrings_vis[index].grid(row=index + 1, column=1, sticky="W")
+            this.tkrings[index].grid_remove()
+            this.tkrings_vis[index].grid_remove()
+            this.tkrings_vis[index].bind("<Button-1>", lambda event, idx=index: toggle_visible(idx))
+
+            this.submit = tk.Button(this.frame, text="Submit", foreground="green")
+            this.submit.bind('<Button-1>', submit_event)
+            this.submit.grid(row=4,column=0, columnspan=2, sticky="WE")
+
+            # this.dismiss = tk.Button(this.frame, text="Dismiss", foreground="red")
+            # this.dismiss.bind('<Button-1>', destroy)
+            # this.dismiss.grid(row=3,column=1)
+
+            theme.update(this.frame)
+            theme.update(this.navigation)
+
+    #Hide the rings we will unhide some or all later
+    for index in range(3):
+        this.tkrings[index].grid_remove()
+        this.tkrings_vis[index].grid_remove()
+
     bodyname = this.bodies.current.Name
     this.body["text"] = bodyname
 
-    this.prev = tk.Button(this.navigation, text="Prev", image=this.IMG_PREV, width=14, height=14, borderwidth=0)
-    this.next = tk.Button(this.navigation, text="Next", image=this.IMG_NEXT, width=14, height=14, borderwidth=0)
-    this.prev.grid(row=0, column=0, sticky="W")
-    this.next.grid(row=0, column=2, sticky="E")
-    this.prev.bind('<Button-1>', prev)
-    this.next.bind('<Button-1>', next)
-
-    this.tkrings = []
-    this.tkrings_vis = []
-
     for index, ring in enumerate(this.bodies.current.Rings):
         logger.debug(f"setting index = {index} {ring}")
-        this.tkrings.append(tk.Label(this.frame))
-        this.tkrings_vis.append(tk.Label(this.frame))
         this.tkrings[index]["text"] = ring.get("Name").replace(f"{bodyname} ", "")
         this.tkrings[index].grid(row=index + 1, column=0, sticky="W")
         this.tkrings_vis[index].grid(row=index + 1, column=1, sticky="W")
-        this.tkrings_vis[index].bind("<Button-1>", lambda event, idx=index: toggle_visible(idx))
+        
         if ring.get("Visible"):
             this.tkrings_vis[index]["text"] = "Visible"
             this.tkrings_vis[index].config(foreground="green")
@@ -274,39 +303,23 @@ def create():
             this.tkrings_vis[index].config(foreground="grey")
 
 
-    # this.ruin.bind('<Button-1>', ruin_next)
-    # this.ruin.bind('<Button-3>', ruin_prev)
-    # this.ruin_image = tk.PhotoImage(
-    #    file=os.path.join(this.plugin_dir, "images", f"{this.types.current()}.png"))
-    # this.ruin["image"]=this.ruin_image
+        # this.ruin.bind('<Button-1>', ruin_next)
+        # this.ruin.bind('<Button-3>', ruin_prev)
+        # this.ruin_image = tk.PhotoImage(
+        #    file=os.path.join(this.plugin_dir, "images", f"{this.types.current()}.png"))
+        # this.ruin["image"]=this.ruin_image
 
-    # this.desc=tk.Label(this.frame,text=this.types.current().title())
-    # this.desc.grid(row=1,column=1)
+        # this.desc=tk.Label(this.frame,text=this.types.current().title())
+        # this.desc.grid(row=1,column=1)
 
-    this.submit = tk.Button(this.frame, text="Submit", foreground="green")
-    this.submit.bind('<Button-1>', submit_event)
-    this.submit.grid(row=4,column=0, columnspan=2, sticky="WE")
-
-    # this.dismiss = tk.Button(this.frame, text="Dismiss", foreground="red")
-    # this.dismiss.bind('<Button-1>', destroy)
-    # this.dismiss.grid(row=3,column=1)
-
-    theme.update(this.frame)
-    theme.update(this.navigation)
-    # this.parent.grid()
+        # this.parent.grid()
 
 
 def destroy(event=None):
     logger.info("destroy")
     this.parent.grid_remove()
     this.frame.grid_remove()
-    this.submit.destroy()
-    for index, ring in enumerate(this.tkrings):
-        this.tkrings[index].destroy()
-        this.tkrings_vis[index].destroy()
-    this.prev.destroy()
-    this.nextbody.destroy()
-    this.navigation.destroy()
+    
 
 def plugin_app(parent):
     """
@@ -327,6 +340,7 @@ def plugin_app(parent):
     this.parent.after(30000, destroy_titles)
 
     this.startup = True
+    this.created = False
     this.bodies=cycle([])
     
 
@@ -413,3 +427,8 @@ def journal_entry(cmdr, is_beta, system, station, entry, state):
         this.system = entry.get("StarSystem")
         this.bodies.append(Body(entry))
         create()
+
+    if entry.get("event") == 'FSDJump':
+        this.bodies=cycle([])
+        destroy()
+
