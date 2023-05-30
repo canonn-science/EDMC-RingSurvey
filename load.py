@@ -234,7 +234,7 @@ def prev_body(event):
 
 def create():
     destroy_titles()
-    this.frame.grid(sticky="EW")
+    this.frame.grid()
     this.parent.grid()
 
     if not this.created:
@@ -428,7 +428,7 @@ def journal_entry(cmdr, is_beta, system, station, entry, state):
         this.bodies.append(Body(entry))
         create()
 
-    if entry.get("event") == 'FSDJump':
+    if entry.get("event") in ('FSDJump','StartJump','Location'):
         this.bodies=cycle([])
         destroy()
 
