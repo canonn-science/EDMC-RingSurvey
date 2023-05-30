@@ -248,7 +248,7 @@ def create():
         this.navigation.columnconfigure(3, weight=1)
 
         this.body = tk.Label(this.navigation)
-        this.body.grid(row=0, column=1, columnspan=2)
+        this.body.grid(row=0, column=1)
         
         
         this.prev = tk.Button(this.navigation, text="Prev", image=this.IMG_PREV, width=14, height=14, borderwidth=0)
@@ -287,6 +287,7 @@ def create():
         this.tkrings_vis[index].grid_remove()
 
     bodyname = this.bodies.current.Name
+    logger.debug(f"Setting BodyName: {bodyname}")
     this.body["text"] = bodyname
 
     for index, ring in enumerate(this.bodies.current.Rings):
@@ -406,6 +407,11 @@ def init_test():
         }
     ))
 
+def has_rings(rings):
+    for ring in rings:
+        if ring.get("Name").endswith("Ring"):
+            return True
+    return False
 
 def journal_entry(cmdr, is_beta, system, station, entry, state):
     rtest = (
@@ -414,8 +420,8 @@ def journal_entry(cmdr, is_beta, system, station, entry, state):
         and "test ring survey" in entry.get("Message")
     )
 
-    hasrings = entry.get("Rings")
-    detected = hasrings and entry.get("event") in ("Scan")
+    hasrings = (entry.get("Rings") and has_rings(entry.get("Rings")))
+    detected = (hasrings and entry.get("event") in ("Scan"))
 
     if rtest:
         this.system = system
