@@ -14,6 +14,7 @@ import os
 from config import appname
 import threading
 import math
+from urllib.parse import quote
 
 
 """
@@ -109,6 +110,7 @@ class Body:
             math.pi * pow(ringdata["InnerRad"], 2)
         )
         ringdata["Density"] = ringdata["Area"] / ringdata["MassMT"]
+        ringdata["Width"]=ringdata["OuterRad"]-ringdata["InnerRad"]
         if ringdata["Density"] > 0.001:
             ringdata["Visible"] = True
         else:
@@ -153,22 +155,19 @@ class cycle():
         #set the index to the most recent value
         self.index=len(self.values)-1
 
-class postJson(threading.Thread):
-    def __init__(self, url, payload):
+class postUrl(threading.Thread):
+    def __init__(self, url):
         threading.Thread.__init__(self)
         self.url = url
-        self.payload = payload
+       
 
     def run(self):
-        logger.debug("emitter.post")
+        logger.debug("emitter.get")
 
-        r = requests.post(
-            self.url,
-            data=json.dumps(self.payload, ensure_ascii=False).encode("utf8"),
-            headers={"content-type": "application/json"},
+        r = requests.get(
+            self.url
         )
         if not r.status_code == requests.codes.ok:
-            logger.error(json.dumps(self.payload))
             headers = r.headers
             contentType = str(headers["content-type"])
             if "json" in contentType:
@@ -177,12 +176,11 @@ class postJson(threading.Thread):
                 logger.error(r.content)
             logger.error(r.status_code)
         else:
-            logger.debug("emitter.post success")
-            logger.info(f"{self.url}?id={r.json().get('id')}")
+            logger.info(f"{self.url}")
 
 
-def post(url, payload):
-    postJson(url, payload).start()
+def post(url):
+    postUrl(url).start()
 
 
 def plugin_start3(plugin_dir):
@@ -220,8 +218,30 @@ def toggle_visible(index):
     
 
 def submit_event(event):
+    logger.debug(f"Clicked to Submit")
+    body=this.bodies.current
+    logger.debug(body)
+    for ring in body.Rings:
+        logger.debug(ring)
+        url=f"https://docs.google.com/forms/d/e/1FAIpQLSfnuNxI3FSf9VqgV1qwz4Z0mvwzOB3rV4weL_gtOy9pKlKXPw/formResponse?usp=pp_url"
+        url+=f"&entry.1920445595={quote(this.cmdr)}"
+        url+=f"&entry.593886049={quote(this.system)}"
+        url+=f"&entry.790394514={this.id64}"
+        url+=f"&entry.2122636={quote(body.Name)}"
+        url+=f"&entry.978850958={quote(ring.get('Name'))}"
+        url+=f"&entry.1583423290={ring.get('Visible')}"
+        url+=f"&entry.1103106375={ring.get('RingClass')}"
+        url+=f"&entry.1378831795={ring.get('MassMT')}"
+        url+=f"&entry.1650707130={ring.get('InnerRad')}"
+        url+=f"&entry.963720103={ring.get('OuterRad')}"
+        url+=f"&entry.1767048738={ring.get('Area')}"
+        url+=f"&entry.1516548742={ring.get('Density')}"
+        url+=f"&entry.1235840073={ring.get('Width')}"
+        logger.debug(url)
+
+        post(url)
     this.bodies.current.submitted=True
-    this.submit.grid_remove()
+    
 
 def next_body(event):
     this.bodies.next()
@@ -295,7 +315,7 @@ def create():
         this.tkrings[index]["text"] = ring.get("Name").replace(f"{bodyname} ", "")
         this.tkrings[index].grid(row=index + 1, column=0, sticky="W")
         this.tkrings_vis[index].grid(row=index + 1, column=1, sticky="W")
-        
+        this.submit.bind('<Button-1>', submit_event)
         if ring.get("Visible"):
             this.tkrings_vis[index]["text"] = "Visible"
             this.tkrings_vis[index].config(foreground="green")
@@ -350,8 +370,8 @@ def plugin_app(parent):
 
 def init_test():
     this.bodies =cycle([])
-    
-
+    this.cmdr="Test"    
+    this.id64=1234
     this.bodies.append(Body(
         {
             "timestamp": "2023-05-19T18:37:50Z",
@@ -385,23 +405,23 @@ def init_test():
                 {
                     "Name": f"{this.system} 1 A Ring",
                     "RingClass": "eRingClass_Metalic",
-                    "MassMT": 3.7679e10,
-                    "InnerRad": 1.3762e09,
-                    "OuterRad": 2.8425e09,
+                    "MassMT": 37679000000000.0,
+                    "InnerRad": 37679000000000.0,
+                    "OuterRad": 37679000000000.0,
                 },
                 {
                     "Name": f"{this.system} 1 B Ring",
                     "RingClass": "eRingClass_Metalic",
-                    "MassMT": 3.7679e20,
-                    "InnerRad": 1.3762e09,
-                    "OuterRad": 2.8425e09,
+                    "MassMT": 37679000000000.0,
+                    "InnerRad": 37679000000000.0,
+                    "OuterRad": 37679000000000.0,
                 },
                 {
                     "Name": f"{this.system} 1 C Ring",
                     "RingClass": "eRingClass_Metalic",
-                    "MassMT": 3.7679e10,
-                    "InnerRad": 1.3762e09,
-                    "OuterRad": 2.8425e09,
+                    "MassMT": 37679000000000.0,
+                    "InnerRad": 37679000000000.0,
+                    "OuterRad": 37679000000000.0,
                 },
             ],
         }
@@ -431,6 +451,8 @@ def journal_entry(cmdr, is_beta, system, station, entry, state):
 
     if detected:
         this.system = entry.get("StarSystem")
+        this.id64= entry.get("SystemAddress")
+        this.cmdr=cmdr
         this.bodies.append(Body(entry))
         create()
 
