@@ -208,39 +208,46 @@ def destroy_titles(event=None):
 
 def toggle_visible(index):
     logger.debug(f"toggling visible {index}")
-    this.bodies.current.toggle_ring(index)
-    if this.tkrings_vis[index]["text"] == "Visible":
-        this.tkrings_vis[index]["text"]="Hidden"
-        this.tkrings_vis[index].config(foreground="grey")
-    else:
-        this.tkrings_vis[index]["text"]="Visible"
-        this.tkrings_vis[index].config(foreground="green")
+
+    if not this.bodies.current.submitted:
+        this.bodies.current.toggle_ring(index)
+        if this.tkrings_vis[index]["text"] == "Visible":
+            this.tkrings_vis[index]["text"]="Hidden"
+            this.tkrings_vis[index].config(foreground="grey")
+        else:
+            this.tkrings_vis[index]["text"]="Visible"
+            this.tkrings_vis[index].config(foreground="green")
     
 
 def submit_event(event):
-    logger.debug(f"Clicked to Submit")
-    body=this.bodies.current
-    logger.debug(body)
-    for ring in body.Rings:
-        logger.debug(ring)
-        url=f"https://docs.google.com/forms/d/e/1FAIpQLSfnuNxI3FSf9VqgV1qwz4Z0mvwzOB3rV4weL_gtOy9pKlKXPw/formResponse?usp=pp_url"
-        url+=f"&entry.1920445595={quote(this.cmdr)}"
-        url+=f"&entry.593886049={quote(this.system)}"
-        url+=f"&entry.790394514={this.id64}"
-        url+=f"&entry.2122636={quote(body.Name)}"
-        url+=f"&entry.978850958={quote(ring.get('Name'))}"
-        url+=f"&entry.1583423290={ring.get('Visible')}"
-        url+=f"&entry.1103106375={ring.get('RingClass')}"
-        url+=f"&entry.1378831795={ring.get('MassMT')}"
-        url+=f"&entry.1650707130={ring.get('InnerRad')}"
-        url+=f"&entry.963720103={ring.get('OuterRad')}"
-        url+=f"&entry.1767048738={ring.get('Area')}"
-        url+=f"&entry.1516548742={ring.get('Density')}"
-        url+=f"&entry.1235840073={ring.get('Width')}"
-        logger.debug(url)
+    if not this.bodies.current.submitted:
+        logger.debug(f"Clicked to Submit")
+        body=this.bodies.current
+        logger.debug(body)
+        for ring in body.Rings:
+            logger.debug(ring)
+            url=f"https://docs.google.com/forms/d/e/1FAIpQLSfnuNxI3FSf9VqgV1qwz4Z0mvwzOB3rV4weL_gtOy9pKlKXPw/formResponse?usp=pp_url"
+            url+=f"&entry.1920445595={quote(this.cmdr)}"
+            url+=f"&entry.593886049={quote(this.system)}"
+            url+=f"&entry.790394514={this.id64}"
+            url+=f"&entry.2122636={quote(body.Name)}"
+            url+=f"&entry.978850958={quote(ring.get('Name'))}"
+            url+=f"&entry.1583423290={ring.get('Visible')}"
+            url+=f"&entry.1103106375={ring.get('RingClass')}"
+            url+=f"&entry.1378831795={ring.get('MassMT')}"
+            url+=f"&entry.1650707130={ring.get('InnerRad')}"
+            url+=f"&entry.963720103={ring.get('OuterRad')}"
+            url+=f"&entry.1767048738={ring.get('Area')}"
+            url+=f"&entry.1516548742={ring.get('Density')}"
+            url+=f"&entry.1235840073={ring.get('Width')}"
+            logger.debug(url)
 
-        post(url)
-    this.bodies.current.submitted=True
+            post(url)
+        this.bodies.current.submitted=True
+        this.submit["text"]="Reported"
+        this.submit.config(foreground="grey")
+    
+
     
 
 def next_body(event):
@@ -323,6 +330,14 @@ def create():
             this.tkrings_vis[index]["text"] = "Hidden"
             this.tkrings_vis[index].config(foreground="grey")
 
+    if this.bodies.current.submitted:
+        logger.debug(f"Hiding Submit")
+        this.submit["text"]="Reported"
+        this.submit.config(foreground="grey")
+    else:
+        this.submit["text"]="Send Report"
+        this.submit.config(foreground="green")
+        logger.debug(f"Showing Submit")
 
         # this.ruin.bind('<Button-1>', ruin_next)
         # this.ruin.bind('<Button-3>', ruin_prev)
@@ -336,11 +351,16 @@ def create():
         # this.parent.grid()
 
 
+
+
 def destroy(event=None):
     logger.info("destroy")
     this.parent.grid_remove()
     this.frame.grid_remove()
     
+def hide_submit():
+    logger.debug(f"Hiding Submit in event")
+    this.submit.grid_remove()
 
 def plugin_app(parent):
     """
@@ -363,7 +383,7 @@ def plugin_app(parent):
     this.startup = True
     this.created = False
     this.bodies=cycle([])
-    
+
 
     return this.frame
 
