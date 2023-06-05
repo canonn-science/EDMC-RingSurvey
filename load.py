@@ -109,7 +109,7 @@ class Body:
         ringdata["Area"] = (math.pi * pow(ringdata["OuterRad"], 2)) - (
             math.pi * pow(ringdata["InnerRad"], 2)
         )
-        ringdata["Density"] = ringdata["Area"] / ringdata["MassMT"]
+        ringdata["Density"] = ringdata["MassMT"] / ringdata["Area"] 
         ringdata["Width"]=ringdata["OuterRad"]-ringdata["InnerRad"]
         if ringdata["Density"] > 0.001:
             ringdata["Visible"] = True
