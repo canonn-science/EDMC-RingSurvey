@@ -7,6 +7,8 @@ When you scan a body with rings the plugin will display the body name and the ri
 
 Once you have set the data to match your observations you can click on the submit button to send the data to the sheet we are using to collate the data.
 
+![](images/help.png)
+
 # The Data
 
 The data will be stored in a [google sheet](https://docs.google.com/spreadsheets/d/1Kaf8wQtvRvf_BQCSpylLc938IIu8oOBlmrvGxYnTfqU/edit?usp=sharing). The following attributes will be recorded.
