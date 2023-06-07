@@ -78,8 +78,8 @@ class Body:
     def __init__(self, event):
         self.event = event
         self.name = event.get("BodyName")
-        self.system = event.get("SystemName")
-        self.bodyid = event.get("BodyId")
+        self.system = event.get("StarSystem")
+        self.bodyid = event.get("BodyID")
         self.rings = []
         for r in event.get("Rings"):
             self.rings.append(self.init_rings(r))
@@ -88,6 +88,10 @@ class Body:
     def __repr__(self):
         properties = vars(self)
         return str(properties)
+
+    @property
+    def BodyId(self):
+        return self.bodyid
 
     @property
     def Name(self):
@@ -151,9 +155,20 @@ class cycle:
         return self.values[self.index]
 
     def append(self, value):
-        self.values.append(value)
-        # set the index to the most recent value
-        self.index = len(self.values) - 1
+        # need to check if the body all ready exists
+        found_idx = None
+        for index, body in enumerate(self.values):
+            if body.BodyId == value.BodyId:
+                logger.info(f"found this bodyid {index} {body}")
+                found_idx = index
+
+        if found_idx is None:
+            self.values.append(value)
+            # set the index to the most recent value
+            self.index = len(self.values) - 1
+        else:
+            logger.info(f"Not a new body {value}")
+            self.index = found_idx
 
 
 class postUrl(threading.Thread):
