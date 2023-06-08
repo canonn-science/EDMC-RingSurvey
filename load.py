@@ -80,6 +80,12 @@ class Body:
         self.name = event.get("BodyName")
         self.system = event.get("StarSystem")
         self.bodyid = event.get("BodyID")
+        if event.get("PlanetClass"):
+            self.type = "Planet"
+            self.subType = event.get("PlanetClass")
+        if event.get("StarType"):
+            self.type = "Star"
+            self.subType = event.get("StarType")
         self.rings = []
         for r in event.get("Rings"):
             self.rings.append(self.init_rings(r))
@@ -88,6 +94,14 @@ class Body:
     def __repr__(self):
         properties = vars(self)
         return str(properties)
+
+    @property
+    def Type(self):
+        return self.type
+
+    @property
+    def SubType(self):
+        return self.subType
 
     @property
     def BodyId(self):
@@ -258,6 +272,8 @@ def submit_event(event):
             url += f"&entry.1767048738={ring.get('Area')}"
             url += f"&entry.1516548742={ring.get('Density')}"
             url += f"&entry.1235840073={ring.get('Width')}"
+            url += f"&entry.817174739={body.Type}"
+            url += f"&entry.1956136464={body.SubType}"
             logger.debug(url)
 
             post(url)
