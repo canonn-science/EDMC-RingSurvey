@@ -129,10 +129,10 @@ class Body:
         )
         ringdata["Density"] = ringdata["MassMT"] / ringdata["Area"]
         ringdata["Width"] = ringdata["OuterRad"] - ringdata["InnerRad"]
-        if ringdata["Density"] > 0.001:
-            ringdata["Visible"] = True
-        else:
+        if ringdata["Density"] < 0.1 and ringdata["Width"] > 1000000:
             ringdata["Visible"] = False
+        else:
+            ringdata["Visible"] = True
 
         return ringdata
 
