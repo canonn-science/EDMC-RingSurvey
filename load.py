@@ -48,6 +48,7 @@ Only interested in these values from the Scan event
 """
 
 this = sys.modules[__name__]
+this.Release = "1.7.0"
 
 # This could also be returned from plugin_start3()
 plugin_name = os.path.basename(os.path.dirname(__file__))
@@ -184,6 +185,17 @@ class cycle:
             logger.info(f"Not a new body {value}")
             self.index = found_idx
 
+    def set_body(self, bodyname):
+        found_idx = None
+        for index, body in enumerate(self.values):
+            if body.Name == bodyname:
+                logger.info(f"found this body {index} {body}")
+                found_idx = index
+
+        if found_idx is not None:
+            self.index = found_idx
+        return found_idx
+
 
 class postUrl(threading.Thread):
     def __init__(self, url):
@@ -288,7 +300,7 @@ def next_body(event):
 
 
 def prev_body(event):
-    this.bodies.next()
+    this.bodies.prev()
     create()
 
 
@@ -433,7 +445,9 @@ def plugin_app(parent):
     # this.frame.grid(row=0,column=0)
     # By default widgets inherit the current theme's colors
     this.title = tk.Label(this.frame, text="Ring Survey:")
-    this.status = tk.Label(this.frame, text="Started", foreground="green")
+    this.status = tk.Label(
+        this.frame, text=f"Release {this.Release}", foreground="green"
+    )
     # this.container.grid(row=0,column=0)
     this.title.grid(row=0, column=0, sticky="NSEW")
     this.status.grid(row=0, column=1, sticky="NSEW")
@@ -517,6 +531,18 @@ def has_rings(rings):
     return False
 
 
+def ring2body(ringname):
+    bodyname = ""
+    endings = ("A Ring", "B Ring", "C Ring")
+
+    # Remove any of the endings from the string
+    for ending in endings:
+        if ringname.endswith(ending):
+            bodyname = ringname.rstrip(ending).rstrip()
+            break
+    return bodyname
+
+
 def journal_entry(cmdr, is_beta, system, station, entry, state):
     rtest = (
         entry.get("event") == "SendText"
@@ -526,6 +552,7 @@ def journal_entry(cmdr, is_beta, system, station, entry, state):
 
     hasrings = entry.get("Rings") and has_rings(entry.get("Rings"))
     detected = hasrings and entry.get("event") in ("Scan")
+    ringscan = entry.get("event") in ("Scan") and entry.get("BodyName").endswith("Ring")
 
     if rtest:
         this.system = system
@@ -539,6 +566,14 @@ def journal_entry(cmdr, is_beta, system, station, entry, state):
         this.cmdr = cmdr
         this.bodies.append(Body(entry))
         create()
+
+    if ringscan:
+        bodyname = ring2body(entry.get("BodyName"))
+        print(f"ringscan {bodyname}")
+        if this.bodies.len > 0:
+            print(f"setting body {bodyname}")
+            this.bodies.set_body(bodyname)
+            create()
 
     if entry.get("event") in ("FSDJump", "StartJump", "Location"):
         this.bodies = cycle([])
