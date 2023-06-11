@@ -48,7 +48,7 @@ Only interested in these values from the Scan event
 """
 
 this = sys.modules[__name__]
-this.Release = "1.8.0"
+this.Release = "2.0.1"
 
 # This could also be returned from plugin_start3()
 plugin_name = os.path.basename(os.path.dirname(__file__))
