@@ -48,7 +48,7 @@ Only interested in these values from the Scan event
 """
 
 this = sys.modules[__name__]
-this.Release = "1.7.0"
+this.Release = "1.8.0"
 
 # This could also be returned from plugin_start3()
 plugin_name = os.path.basename(os.path.dirname(__file__))
@@ -58,6 +58,39 @@ plugin_name = os.path.basename(os.path.dirname(__file__))
 # NB: plugin_name here *must* be the plugin's folder name as per the preceding
 #     code, else the logger won't be properly set up.
 logger = logging.getLogger(f"{appname}.{plugin_name}")
+
+
+class ReleaseThread(threading.Thread):
+    def __init__(self, release_number, parent):
+        threading.Thread.__init__(self)
+        self.release_number = release_number
+        self.parent = parent
+
+    def run(self):
+        if self.is_latest_release(self.release_number):
+            self.parent.event_generate("<<NewReleaseAvailable>>", when="tail")
+
+    def is_latest_release(self, release_number):
+        repo_owner = "canonn-science"
+        repo_name = "EDMC-RingSurvey"
+        api_url = (
+            f"https://api.github.com/repos/{repo_owner}/{repo_name}/releases/latest"
+        )
+
+        response = requests.get(api_url)
+
+        if response.status_code == 200:
+            latest_release = response.json()["tag_name"]
+            if latest_release > release_number:
+                return True
+            else:
+                return False
+        else:
+            print(
+                f"Failed to retrieve latest release information. Status code: {response.status_code}"
+            )
+            return False
+
 
 # If the Logger has handlers then it was already set up by the core code, else
 # it needs setting up here.
@@ -433,6 +466,12 @@ def hide_submit():
     this.submit.grid_remove()
 
 
+def handle_new_release(event):
+    if this.startup:
+        this.status["text"] = "New Release Available"
+        this.status.config(foreground="red")
+
+
 def plugin_app(parent):
     """
     Create a pair of TK widgets for the EDMC main window
@@ -445,9 +484,13 @@ def plugin_app(parent):
     # this.frame.grid(row=0,column=0)
     # By default widgets inherit the current theme's colors
     this.title = tk.Label(this.frame, text="Ring Survey:")
-    this.status = tk.Label(
-        this.frame, text=f"Release {this.Release}", foreground="green"
-    )
+    this.status = HyperlinkLabel(this.frame, text=f"Release {this.Release}")
+
+    this.status["url"] = "https://github.com/canonn-science/EDMC-RingSurvey/releases"
+
+    this.status.configure(foreground="green")
+    this.parent.bind("<<NewReleaseAvailable>>", handle_new_release)
+    ReleaseThread(this.Release, this.parent).start()
     # this.container.grid(row=0,column=0)
     this.title.grid(row=0, column=0, sticky="NSEW")
     this.status.grid(row=0, column=1, sticky="NSEW")
