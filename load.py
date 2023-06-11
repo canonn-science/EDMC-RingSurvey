@@ -486,7 +486,9 @@ def plugin_app(parent):
     this.title = tk.Label(this.frame, text="Ring Survey:")
     this.status = HyperlinkLabel(this.frame, text=f"Release {this.Release}")
 
-    this.status["url"] = "https://github.com/canonn-science/EDMC-RingSurvey/releases"
+    this.status[
+        "url"
+    ] = "https://github.com/canonn-science/EDMC-RingSurvey/releases/latest"
 
     this.status.configure(foreground="green")
     this.parent.bind("<<NewReleaseAvailable>>", handle_new_release)
