@@ -303,6 +303,7 @@ def submit_event(event):
         logger.debug(body)
         for ring in body.Rings:
             logger.debug(ring)
+
             url = f"https://docs.google.com/forms/d/e/1FAIpQLSfnuNxI3FSf9VqgV1qwz4Z0mvwzOB3rV4weL_gtOy9pKlKXPw/formResponse?usp=pp_url"
             url += f"&entry.1920445595={quote(this.cmdr)}"
             url += f"&entry.593886049={quote(this.system)}"
@@ -319,6 +320,7 @@ def submit_event(event):
             url += f"&entry.1235840073={ring.get('Width')}"
             url += f"&entry.817174739={body.Type}"
             url += f"&entry.1956136464={body.SubType}"
+            url += f"&entry.1819623132={this.Release}"
             logger.debug(url)
 
             post(url)
