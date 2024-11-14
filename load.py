@@ -622,6 +622,6 @@ def journal_entry(cmdr, is_beta, system, station, entry, state):
             this.bodies.set_body(bodyname)
             create()
 
-    if entry.get("event") in ("FSDJump", "StartJump", "Location"):
+    if entry.get("event") in ("FSDJump", "Location"):
         this.bodies = cycle([])
         destroy()
