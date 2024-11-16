@@ -48,7 +48,7 @@ Only interested in these values from the Scan event
 """
 
 this = sys.modules[__name__]
-this.Release = "2.0.1"
+this.Release = "2.0.3"
 
 # This could also be returned from plugin_start3()
 plugin_name = os.path.basename(os.path.dirname(__file__))
@@ -488,9 +488,9 @@ def plugin_app(parent):
     this.title = tk.Label(this.frame, text="Ring Survey:")
     this.status = HyperlinkLabel(this.frame, text=f"Release {this.Release}")
 
-    this.status[
-        "url"
-    ] = "https://github.com/canonn-science/EDMC-RingSurvey/releases/latest"
+    this.status["url"] = (
+        "https://github.com/canonn-science/EDMC-RingSurvey/releases/latest"
+    )
 
     this.status.configure(foreground="green")
     this.parent.bind("<<NewReleaseAvailable>>", handle_new_release)
